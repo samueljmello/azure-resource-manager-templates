@@ -1,0 +1,19 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "apiProfile": "2017-03-09-profile",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "parameter1": {
+      "type": "string",
+      "defaultValue": "value",
+      "metadata": {
+        "description": "Description of the parameter"
+      }
+    }
+  },
+  "variables": {
+    "variable1": "value"
+  },
+  "resources": [
+  ]
+}
