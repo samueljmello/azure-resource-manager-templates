@@ -3,17 +3,106 @@
   "apiProfile": "2017-03-09-profile",
   "contentVersion": "1.0.0.0",
   "parameters": {
-    "parameter1": {
+    "virtualNetworkName": {
       "type": "string",
-      "defaultValue": "value",
       "metadata": {
-        "description": "Description of the parameter"
+        "description": "The virtual network to join (must exist)"
+      }
+    },
+    "virtualNetworkResourceGroupName": {
+      "type": "string",
+      "metadata": {
+        "description": "The virtual network's resource group name"
+      }
+    },
+    "subnetName": {
+      "type": "string",
+      "metadata": {
+        "description": "The subnet within the provided virtual network to join (must exist)"
       }
     }
   },
   "variables": {
-    "variable1": "value"
+    "vmNameBase": "racher-vm-",
+    "vmSize": "Standard_D2S_v3",
+    "osImage": {
+      "publisher": "rancher",
+      "offer": "rancheros",
+      "sku": "os",
+      "version": "0.3.1"
+    }
   },
   "resources": [
+    {
+      "type": "Microsoft.Network/networkInterfaces",
+      "name": "[concat(variables('vmNameBase'), '01-nic')]",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig1",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "subnet": { 
+                "id": "[variables('subnetId')]" 
+              },
+              "loadBalancerBackendAddressPools": [
+                {
+                  "id": "[concat(variables('loadBalancerId'), '/backendAddressPools/', variables('loadBalancerBackendPoolName'))]"
+                }
+              ],
+              "applicationSecurityGroups": [
+                {
+                    "id": "[resourceId('Microsoft.Network/applicationSecurityGroups', parameters('applicationSecurityGroupName'))]"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines",
+      "name": "[concat(variables('vmNameBase'), '01')]",
+      "location": "[resourceGroup().location]",
+      "plan": {
+        "name": "[variables('osImage').sku]",
+        "publisher": "[variables('osImage').publisher]",
+        "product": "[variables('osImage').offer]"
+      },
+      "dependsOn": [
+        "[concat('Microsoft.Network/networkInterfaces/', variables('vmNameBase'), '01-nic')]"
+      ],
+      "properties": {
+        "diagnosticsProfile": {
+          "bootDiagnostics": {
+            "enabled": false
+          }
+        },
+        "hardwareProfile": {
+          "vmSize": "[variables('vmSize')]"
+        },
+        "osProfile": {
+          "computerName": "[concat(variables('vmNameBase'), '01')]",
+          "adminUsername": "rancherosadmin",
+          "adminPassword": "d*llCxrts34yc!"
+        },
+        "storageProfile": {
+          "imageReference": "[parameters('osImage')]",
+          "osDisk": {
+            "name": "[concat(variables('vmNameBase'), '01-osdisk')]",
+            "caching": "ReadWrite",
+            "createOption": "FromImage"
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('vmNameBase'), '01-nic')]"
+            }
+          ]
+        }
+      }
+    }
   ]
 }
